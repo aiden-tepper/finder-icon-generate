@@ -1,12 +1,18 @@
 import os
 from openai import OpenAI
+
+import tkinter as tk
+from tkinter.filedialog import askdirectory
+import subprocess
+
+import sys
+
 from applescript import tell
 
-client = OpenAI(
-    api_key="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",
-)
+client = OpenAI()
 
-def generate_image(prompt):
+def generate_image(name):
+    prompt = f"art depicting a song called \"{name}\""
     response = client.images.generate(
         prompt=prompt,
         size="256x256",
@@ -17,26 +23,46 @@ def generate_image(prompt):
 
     return image_url
 
-def change_icon(folder_path, image_url):
-    script = f"""
-    tell application "Finder"
-        set iconFile to POSIX file "{image_url}" as alias
-        set folderToChange to POSIX file "{folder_path}" as alias
-        set icon of folderToChange to iconFile
-    end tell
-    """
-    tell(script)
+def create_icon_from_image(image_path, output_icon_path):
+    # Create an .iconset directory
+##    iconset_path = output_icon_path + ".iconset"
+##    os.makedirs(iconset_path)
+##
+##    # Convert the image to an .icns file using iconutil
+##    subprocess.run(["iconutil", "-c", "icns", "-o", iconset_path, image_path])
+##
+##    # Move the resulting .icns file to the desired location
+##    icns_file = os.path.join(iconset_path, "icon.icns")
+##    os.rename(icns_file, output_icon_path)
+##
+##    # Remove the temporary .iconset directory
+##    os.rmdir(iconset_path)
+    subprocess.run(["sips", "-s", "format", "icns", image_path, "--out", output_icon_path])
 
-def main():
-    # Replace with the actual paths of the folders you want to change
-    folders = ['/path/to/folder1', '/path/to/folder2']
 
-    for folder in folders:
-        # Use the folder name as the prompt for DALL-E
-        folder_name = os.path.basename(folder)
+def change_folder_icon(folder_path, icon_path):
+    # Change the folder icon using osascript
+    script = f'tell application "Finder" to set icon file of (POSIX file \"{folder_path}\" as alias) to POSIX file \"{icon_path}\"'
+    
+    subprocess.run(["osascript", "-e", script])
 
-        # Generate an image based on the folder name
-        image_url = generate_image(folder_name)
 
-        # Change the folder's icon to the generated image
-        change_icon(folder, image_url)
+folders = sys.argv[1:]
+
+if not folders:
+    print("Please provide file/directory paths.")
+else:
+    print(folders)
+    for f in folders:
+        name = f[2:]
+##        image_url = generate_image(name)
+##        print(image_url)
+        icon_path = os.path.join(f, "folder_icon.icns")
+        image_url = "./pic.png"
+        create_icon_from_image(image_url, icon_path)
+        change_folder_icon(f,icon_path)
+
+        
+##
+##        # Change the folder's icon to the generated image
+##        change_icon(folder, image_url)
